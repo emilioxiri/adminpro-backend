@@ -1,25 +1,32 @@
 // Requires
 var express = require('express');
 var mongoose = require('mongoose');
+var bodyParser = require('body-parser');
 
 
 // Inicializar variables
 var app = express();
 
+//Body parser
+// parse application/x-www-form-urlencoded
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+
+//Importar routas
+var appRoute = require('./routes/pathRoute');
+var userRoute = require('./routes/user');
+var loginRoute = require('./routes/login');
 
 // Conexion a la BDD
-mongoose.connection.openUri('mongodb://localhost:27017/hospitalDB', (error, response) => {
+mongoose.connection.openUri('mongodb://localhost:27017/hospitalDB', (error) => {
     if (error) throw error;
     console.log('MongoDB in localhost:27017: \x1b[32m%s\x1b[0m', ' online.');
 });
 
 //Rutas
-app.get('/', (request, reponse, next) => {
-    reponse.status(200).json({
-        ok: true,
-        message: 'Peticion realizada correctamente'
-    });
-});
+app.use('/login', loginRoute);
+app.use('/user', userRoute);
+app.use('/', appRoute);
 
 
 //Escuchar peticiones
