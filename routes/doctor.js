@@ -1,21 +1,23 @@
 var express = require('express');
 var bcrypt = require('bcrypt');
 var app = express();
-var User = require('../models/user');
+var Doctor = require('../models/doctor');
 var jwt = require('jsonwebtoken');
 var middlewareAuth = require('../middlewares/authentication');
 //Rutas
 
 //===============================================
-//  Obtener usuarios                            
+//  Obtener doctores                            
 //===============================================
 app.get('/', (request, reponse) => {
     var from = Number(request.query.from) || 0;
 
-    User.find({}, 'name email img role')
-        .skip(from)
-        .limit(2)
-        .exec((error, users) => {
+    Doctor.find({})
+    .skip(from)
+    .limit(2)
+    .populate('user', 'name email')
+    .populate('hospital')
+        .exec((error, doctors) => {
             if (error) {
                 return reponse.status(500).json({
                     ok: true,
@@ -24,10 +26,10 @@ app.get('/', (request, reponse) => {
                 });
             }
 
-            User.count({}, (error, count) => {
+            Doctor.count({}, (error, count) => {
                 reponse.status(200).json({
                     ok: true,
-                    users: users,
+                    doctors: doctors,
                     count: count
                 });
             });
@@ -37,19 +39,18 @@ app.get('/', (request, reponse) => {
 
 
 //===============================================
-//  Guardar usuario                            
+//  Guardar doctor                            
 //===============================================
 app.post('/', middlewareAuth.verifyToken, (request, response) => {
     var body = request.body;
-    var user = new User({
+    var doctor = new Doctor({
         name: body.name,
-        email: body.email,
-        password: bcrypt.hashSync(body.password, 10),
         img: body.img,
-        role: body.role
+        user: body.user,
+        hospital: body.hospital
     });
 
-    user.save((error, savedUser) => {
+    doctor.save((error, savedDoctor) => {
         if (error) {
             return response.status(400).json({
                 ok: true,
@@ -60,18 +61,18 @@ app.post('/', middlewareAuth.verifyToken, (request, response) => {
 
         response.status(200).json({
             ok: true,
-            user: savedUser,
+            doctor: savedDoctor,
             author: request.user
         });
     });
 });
 
 //===============================================
-//  Actualizar usuario                          
+//  Actualizar doctor                          
 //===============================================
 app.put('/:id', middlewareAuth.verifyToken, (request, reponse) => {
     var id = request.params.id;
-    User.findById(id, (error, user) => {
+    Doctor.findById(id, (error, doctor) => {
         if (error) {
             return reponse.status(500).json({
                 ok: true,
@@ -80,19 +81,20 @@ app.put('/:id', middlewareAuth.verifyToken, (request, reponse) => {
             });
         }
 
-        if (!user) {
+        if (!doctor) {
             return reponse.status(400).json({
                 ok: true,
-                message: 'The user with id ' + id + ' not exists!',
+                message: 'The doctor with id ' + id + ' not exists!',
                 errors: error
             });
         }
         var body = request.body;
-        user.name = body.name;
-        user.mail = body.mail;
-        user.role = body.role;
+        doctor.name = body.name;
+        doctor.img = body.img;
+        doctor.user = body.user;
+        doctor.hospital = body.hospital;
 
-        user.save((error, savedUser) => {
+        doctor.save((error, savedDoctor) => {
             if (error) {
                 return reponse.status(400).json({
                     ok: true,
@@ -101,23 +103,21 @@ app.put('/:id', middlewareAuth.verifyToken, (request, reponse) => {
                 });
             }
 
-            savedUser.password = ':)';
-
             reponse.status(200).json({
                 ok: true,
-                user: savedUser
+                doctor: savedDoctor
             });
         });
     });
 });
 
 //===============================================
-//  Borrar usuario                            
+//  Borrar doctor                            
 //===============================================
 app.delete('/:id', middlewareAuth.verifyToken, (request, reponse) => {
     var id = request.params.id;
 
-    User.findByIdAndDelete(id, (error, response) => {
+    Doctor.findByIdAndDelete(id, (error, response) => {
         if (error) {
             return reponse.status(400).json({
                 ok: true,

@@ -11,7 +11,8 @@ var usuarioSchema = new Schema({
     email: { type: String, unique: true, required: [true, 'The email is required'] },
     password: { type: String, required: [true, 'The password is required'] },
     img: { type: String, required: false },
-    role: { type: String, required: true, default: 'USER_ROLE', enum: ROLES }
+    role: { type: String, required: true, default: 'USER_ROLE', enum: ROLES },
+    google: {type: Boolean, default: false},
 });
 
 usuarioSchema.plugin(uniqueValidator, { message: 'The {PATH} must be unique' });
